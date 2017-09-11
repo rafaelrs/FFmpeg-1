@@ -46,21 +46,7 @@ int ff_url_join(char *str, int size, const char *proto,
         av_strlcatf(str, size, "%s://", proto);
     if (authorization && authorization[0])
         av_strlcatf(str, size, "%s@", authorization);
-#if CONFIG_NETWORK && defined(AF_INET6)
-    /* Determine if hostname is a numerical IPv6 address,
-     * properly escape it within [] in that case. */
-    hints.ai_flags = AI_NUMERICHOST;
-    if (!getaddrinfo(hostname, NULL, &hints, &ai)) {
-        if (ai->ai_family == AF_INET6) {
-            av_strlcat(str, "[", size);
-            av_strlcat(str, hostname, size);
-            av_strlcat(str, "]", size);
-        } else {
-            av_strlcat(str, hostname, size);
-        }
-        freeaddrinfo(ai);
-    } else
-#endif
+        
         /* Not an IPv6 address, just output the plain string. */
         av_strlcat(str, hostname, size);
 
