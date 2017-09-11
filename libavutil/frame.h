@@ -407,6 +407,10 @@ typedef struct AVFrame {
  */
 #define AV_FRAME_FLAG_DISCARD   (1 << 2)
 /**
+ * The frame contained errors
+ */
+#define AV_FRAME_FLAG_ERROR       (1 << 3)
+/**
  * @}
  */
 

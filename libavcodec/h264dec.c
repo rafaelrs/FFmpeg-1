@@ -1043,6 +1043,13 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+#if CONFIG_ERROR_RESILIENCE
+    H264SliceContext *sl = h->slice_ctx;
+    if (sl->er.error_occurred) {
+      pict->flags |= AV_FRAME_FLAG_ERROR;
+    }
+#endif /* CONFIG_ERROR_RESILIENCE */
+
     av_assert0(pict->buf[0] || !*got_frame);
 
     ff_h264_unref_picture(h, &h->last_pic_for_ec);
