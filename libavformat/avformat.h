@@ -3005,4 +3005,6 @@ AVRational av_stream_get_codec_timebase(const AVStream *st);
  * @}
  */
 
+extern int64_t ANDROID_NETWORK_HANDLE;
+
 #endif /* AVFORMAT_AVFORMAT_H */

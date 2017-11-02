@@ -27,6 +27,14 @@
 #include "libavutil/mem.h"
 #include "libavutil/time.h"
 
+#ifdef ANDROID_MULTINETWORK
+#include "android/multinetwork.h"
+// If we need to to support API < 23, look into:
+// https://groups.google.com/forum/#!topic/Android-ndk/V9an7I1JJjw
+#endif
+
+int64_t ANDROID_NETWORK_HANDLE = 0;
+
 int ff_tls_init(void)
 {
 #if CONFIG_TLS_OPENSSL_PROTOCOL
@@ -184,6 +192,16 @@ int ff_socket(int af, int type, int proto)
     if (fd != -1)
         setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &(int){1}, sizeof(int));
 #endif
+
+#ifdef ANDROID_MULTINETWORK
+    if (ANDROID_NETWORK_HANDLE != 0) {
+        av_log(NULL, AV_LOG_DEBUG, "Binding socket to Android network %lld\n", ANDROID_NETWORK_HANDLE);
+        if (android_setsocknetwork(ANDROID_NETWORK_HANDLE, fd) != 0) {
+            av_log(NULL, AV_LOG_ERROR, "Failed to bind socket to Android network\n");
+        }
+    }
+#endif // ANDROID_MULTINETWORK
+
     return fd;
 }
 
