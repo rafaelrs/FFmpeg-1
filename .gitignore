@@ -1,3 +1,4 @@
+.DS_Store
 *.a
 *.o
 *.o.*
@@ -37,4 +38,5 @@
 /lcov/
 /src
 /mapfile
+/android
 .idea
