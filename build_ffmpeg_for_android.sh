@@ -28,12 +28,14 @@ function build_one
     --enable-cross-compile \
     --enable-jni \
     --enable-mediacodec \
+    --enable-decoder=h264 \
     --enable-decoder=h264_mediacodec \
     --enable-hwaccel=h264_mediacodec \
+    --enable-libopenh264 \
     --enable-neon \
     --sysroot=$SYSROOT \
-    --extra-cflags="$ADDI_CFLAGS $EXTRA_CFLAGS -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 " \
-    --extra-ldflags="$ADDI_LDFLAGS" \
+    --extra-cflags="$CFLAGS_ANDROID -I$ANDROID_INCLUDE" \
+    --extra-ldflags='-Wl, --fix-cortex-a8' \
     $ADDITIONAL_CONFIGURE_FLAG
 make clean
 make -j8
@@ -42,6 +44,11 @@ make install
 CPU=arm-v7a
 PREFIX=$(pwd)/android/$CPU
 
-ADDI_CFLAGS="-DANDROID -marm -I$ANDROID_INCLUDE -DANDROID_MULTINETWORK=1"
-EXTRA_CFLAGS="-fPIC -ffunction-sections -funwind-tables -fstack-protector -fomit-frame-pointer -fstrict-aliasing -funswitch-loops -finline-limit=300"
+CFLAGS1="-DANDROID -DANDROID_MULTINETWORK=1 -DHAVE_SYS_UIO_H=1"
+CFLAGS2="-Dipv6mr_interface=ipv6mr_ifindex -fpic -fasm -Wno-psabi -fno-short-enums"
+CFLAGS3="-fno-strict-aliasing -finline-limit=300 -mvectorize-with-neon-quad -ffast-math"
+CFLAGS4="-O3 -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -march=$CPU -mfpu=neon"
+
+CFLAGS_ANDROID="$CFLAGS1 $CFLAGS2 $CFLAGS3 $CFLAGS4"
+
 build_one

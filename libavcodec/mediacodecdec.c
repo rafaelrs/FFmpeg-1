@@ -37,6 +37,13 @@
 #include "mediacodec_wrapper.h"
 #include "mediacodecdec_common.h"
 
+#include <android/log.h>
+#define LOG_TAG    "FFMPEGMOD"
+#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#define  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
+#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+
 typedef struct MediaCodecH264DecContext {
 
     MediaCodecDecContext *ctx;
@@ -155,11 +162,19 @@ static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
         if ((ret = h2645_ps_to_nalu(sps->data, sps->data_size, &data, &data_size)) < 0) {
             goto done;
         }
+        LOGE("#flow csd-0 ");
+        for(int i=0; i<data_size; i++) {
+            LOGE("#flow 0x%x, ", (int)(data[i]));
+        }
         ff_AMediaFormat_setBuffer(format, "csd-0", (void*)data, data_size);
         av_freep(&data);
 
         if ((ret = h2645_ps_to_nalu(pps->data, pps->data_size, &data, &data_size)) < 0) {
             goto done;
+        }
+        LOGE("#flow csd-1 ");
+        for(int i=0; i<data_size; i++) {
+            LOGE("#flow 0x%x, ", (int)(data[i]));
         }
         ff_AMediaFormat_setBuffer(format, "csd-1", (void*)data, data_size);
         av_freep(&data);
