@@ -1,5 +1,5 @@
 #!/bin/bash
-SYSROOT=$ANDROID_HOME/ndk-bundle/platforms/android-23/arch-arm/
+SYSROOT=$ANDROID_HOME/ndk-bundle-bak-14.1/platforms/android-23/arch-arm/
 TOOLCHAIN=$ANDROID_HOME/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64/
 ANDROID_INCLUDE=${SYSROOT}usr/include/
 
