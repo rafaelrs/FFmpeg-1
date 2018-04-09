@@ -39,3 +39,5 @@
 /mapfile
 android/
 .idea
+.DS_Store
+build/
