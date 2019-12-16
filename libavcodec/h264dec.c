@@ -752,6 +752,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                                        nal->size_bits);
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
+            if (avctx->hwaccel && avctx->hwaccel->pix_fmt == AV_PIX_FMT_VIDEOTOOLBOX) {
+                ret = avctx->hwaccel->decode_slice(avctx,
+                                                   nal->raw_data,
+                                                   nal->raw_size);
+                if (ret < 0)
+                    goto end;
+            }
             break;
         case H264_NAL_AUD:
         case H264_NAL_END_SEQUENCE:
