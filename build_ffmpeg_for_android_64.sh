@@ -10,12 +10,15 @@ set -e
 set -x
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NDK="/opt/android-ndk-r20b/"
+NDK="/opt/android-ndk-r17c"
+#NDK="/opt/android-ndk-r19b"
+#NDK="/home/rafaelrs/AddProgs/android-sdk/ndk/17.2.4988734"
+#NDK="/home/rafaelrs/AddProgs/android-sdk/ndk/21.4.7075529"
 
-#HOST="linux-x86_64"
-HOST="darwin-x86_64"
-PREBUILT="$NDK/toolchains/llvm/prebuilt/$HOST/"
-LLVM_TOOLCHAIN="$PREBUILT/bin"
+BUILD_PLATFORM="linux-x86_64"
+#BUILD_PLATFORM="darwin-x86_64"
+LLVM_PREBUILT="$NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
+LLVM_TOOLCHAIN="$LLVM_PREBUILT/bin"
 SYSROOT="$NDK/sysroot"
 
 CFLAGS="-O3  -fPIC"
@@ -25,7 +28,7 @@ LDFLAGS="-lc"
 # First: ARCH, supported values: armeabi-v7a, arm64-v8a
 # Second: platform level. Range: 14-19, 21-24, 26-28
 
-build () {
+function build () {
     ARCH=$1
     LEVEL=$2
     LIB_FOLDER="lib"
@@ -38,7 +41,6 @@ build () {
 
             LDFLAGS="--fix-cortex-a8 $LDFLAGS"
             PLATFORM_ARCH="arm"
-            TOOLCHAIN_FOLDER=$TARGET
         ;;
         "arm64-v8a")
             TARGET="aarch64-linux-android"
@@ -46,12 +48,16 @@ build () {
             CC_FLAGS="-target aarch64-none-linux-android -mfpu=neon -mfloat-abi=soft"
 
             PLATFORM_ARCH="arm64"
-            TOOLCHAIN_FOLDER=$TARGET
         ;;
     esac
+    TOOLCHAIN_FOLDER="$TARGET-4.9"
 
-    TOOLCHAIN=$NDK/toolchains/$TOOLCHAIN_FOLDER-4.9/prebuilt/$HOST/bin
-
+    TOOLCHAIN=$NDK/toolchains/$TOOLCHAIN_FOLDER/prebuilt/$BUILD_PLATFORM/bin
+    PREBUILT=$NDK/toolchains/$TOOLCHAIN_FOLDER/prebuilt/$BUILD_PLATFORM
+    
+    CROSS=$TARGET
+    CROSS_PREFIX=${TOOLCHAIN}/${CROSS}-
+    
     CC=$LLVM_TOOLCHAIN/clang
     CXX=$LLVM_TOOLCHAIN/clang++
     AS=$CC
@@ -64,17 +70,17 @@ build () {
 
     ./configure \
         --prefix=$PREFIX \
-		--arch=$PLATFORM_ARCH \
-		--target-os=android \
+        --arch=$PLATFORM_ARCH \
+        --target-os=android \
         --ar=$AR \
         --ld=$LD --cc=$CC --cxx=$CXX --as=$AS \
         --extra-cflags="$CC_FLAGS -I$SYSROOT/usr/include/$TARGET -I$SYSROOT/usr/ $CFLAGS" \
-        --extra-ldflags="-rpath-link=$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER -L$NDK/toolchains/$TOOLCHAIN_FOLDER-4.9/prebuilt/$HOST/lib/gcc/$TARGET/4.9.x -L$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER $LDFLAGS" \
+        --extra-ldflags="-rpath-link=$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER -L$NDK/toolchains/$TOOLCHAIN_FOLDER/prebuilt/$BUILD_PLATFORM/lib/gcc/$TARGET/4.9.x -L$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER $LDFLAGS" \
         --sysroot=$SYSROOT \
-        --sysinclude=$SYSROOT/include \
+        --sysinclude=$SYSROOT/usr/include \
         --extra-libs=-lgcc \
         --ranlib=$PREBUILT/$TARGET/bin/ranlib \
-		--disable-indev=v4l2 \
+        --disable-indev=v4l2 \
         --disable-gpl --disable-nonfree \
         --enable-runtime-cpudetect \
         --disable-gray \
@@ -94,6 +100,7 @@ build () {
         --disable-filters \
         --disable-iconv  \
         --disable-asm \
+        --cross-prefix=$CROSS_PREFIX \
         --enable-cross-compile \
         --enable-static \
         --disable-ffplay \
@@ -110,10 +117,10 @@ build () {
         --enable-hwaccel=h264_mediacodec
 
 
-    $NDK/prebuilt/$HOST/bin/make clean
-    $NDK/prebuilt/$HOST/bin/make -j2
-    $NDK/prebuilt/$HOST/bin/make install
+    $NDK/prebuilt/$BUILD_PLATFORM/bin/make clean
+    $NDK/prebuilt/$BUILD_PLATFORM/bin/make -j4
+    $NDK/prebuilt/$BUILD_PLATFORM/bin/make install
 }
 
-#build "armeabi-v7a" "23"
-build "arm64-v8a" "23"
+build "armeabi-v7a" "23"
+#build "arm64-v8a" "23"

@@ -10,12 +10,15 @@ set -e
 set -x
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NDK="/opt/android-ndk-r20b"
+NDK="/opt/android-ndk-r17c"
+#NDK="/opt/android-ndk-r19b"
+#NDK="/home/rafaelrs/AddProgs/android-sdk/ndk/17.2.4988734"
+#NDK="/home/rafaelrs/AddProgs/android-sdk/ndk/21.4.7075529"
 
-#HOST="linux-x86_64"
-HOST="darwin-x86_64"
-PREBUILT="$NDK/toolchains/llvm/prebuilt/$HOST/"
-LLVM_TOOLCHAIN="$PREBUILT/bin"
+BUILD_PLATFORM="linux-x86_64"
+#BUILD_PLATFORM="darwin-x86_64"
+LLVM_PREBUILT="$NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
+LLVM_TOOLCHAIN="$LLVM_PREBUILT/bin"
 SYSROOT="$NDK/sysroot"
 
 CFLAGS="-O3  -fPIC"
@@ -25,44 +28,56 @@ LDFLAGS="-lc"
 # First: ARCH, supported values: armeabi-v7a, arm64-v8a
 # Second: platform level. Range: 14-19, 21-24, 26-28
 
-ARCH="x86"
-LEVEL=23
-LIB_FOLDER="lib"
+function build () {
+    ARCH=$1
+    LEVEL=$2
 
-TARGET="i686-linux-android"
+    PLATFORM_ARCH=$ARCH
+    case $ARCH in
+        "x86")
+            LIB_FOLDER="lib"
+            TARGET="i686-linux-android"
 
-CC_FLAGS="-target i686-linux-android -mfpu=neon -mfloat-abi=soft"
+            CC_FLAGS="-target i686-linux-android -mfpu=neon -mfloat-abi=soft"
+        ;;
+        "x86_64")
+            LIB_FOLDER="lib64"
+            TARGET="x86_64-linux-android"
 
-PLATFORM_ARCH="x86"
-TOOLCHAIN_FOLDER=$TARGET
+            CC_FLAGS="-target x86_64-linux-android -mfpu=neon -mfloat-abi=soft"
+        ;;
+    esac
+    TOOLCHAIN_FOLDER="$PLATFORM_ARCH-4.9"
 
-TOOLCHAIN=$NDK/toolchains/$PLATFORM_ARCH-4.9/prebuilt/$HOST/bin
+    TOOLCHAIN=$NDK/toolchains/$TOOLCHAIN_FOLDER/prebuilt/$BUILD_PLATFORM/bin
+    PREBUILT=$NDK/toolchains/$TOOLCHAIN_FOLDER/prebuilt/$BUILD_PLATFORM
+    
+    CROSS=$TARGET
+    CROSS_PREFIX=${TOOLCHAIN}/${CROSS}-
+    
+    CC=$LLVM_TOOLCHAIN/clang
+    CXX=$LLVM_TOOLCHAIN/clang++
+    AS=$CC
 
-CC=$LLVM_TOOLCHAIN/clang
-CXX=$LLVM_TOOLCHAIN/clang++
-AS=$CC
+    AR=$TOOLCHAIN/$TARGET-ar
+    LD=$TOOLCHAIN/$TARGET-ld
+    STRIP=$TOOLCHAIN/$TARGET-strip
 
-AR=$TOOLCHAIN/$TARGET-ar
-LD=$TOOLCHAIN/$TARGET-ld
-STRIP=$TOOLCHAIN/$TARGET-strip
+    PREFIX="android/$ARCH"
 
-PREFIX="android/$ARCH"
-
-build () {
     ./configure \
         --prefix=$PREFIX \
-        --logfile=/tmp/ffmpeg_configure.log \
-		--arch=$PLATFORM_ARCH \
-		--target-os=android \
+        --arch=$PLATFORM_ARCH \
+        --target-os=android \
         --ar=$AR \
         --ld=$LD --cc=$CC --cxx=$CXX --as=$AS \
         --extra-cflags="$CC_FLAGS -I$SYSROOT/usr/include/$TARGET -I$SYSROOT/usr/ $CFLAGS" \
-        --extra-ldflags="-rpath-link=$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER -L$NDK/toolchains/$TOOLCHAIN_FOLDER-4.9/prebuilt/$HOST/lib/gcc/$TARGET/4.9.x -L$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER $LDFLAGS" \
+        --extra-ldflags="-rpath-link=$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER -L$NDK/toolchains/$TOOLCHAIN_FOLDER/prebuilt/$BUILD_PLATFORM/lib/gcc/$TARGET/4.9.x -L$NDK/platforms/android-$LEVEL/arch-$PLATFORM_ARCH/usr/$LIB_FOLDER $LDFLAGS" \
         --sysroot=$SYSROOT \
-        --sysinclude=$SYSROOT/include \
+        --sysinclude=$SYSROOT/usr/include \
         --extra-libs=-lgcc \
         --ranlib=$PREBUILT/$TARGET/bin/ranlib \
-		--disable-indev=v4l2 \
+        --disable-indev=v4l2 \
         --disable-gpl --disable-nonfree \
         --enable-runtime-cpudetect \
         --disable-gray \
@@ -82,6 +97,7 @@ build () {
         --disable-filters \
         --disable-iconv  \
         --disable-asm \
+        --cross-prefix=$CROSS_PREFIX \
         --enable-cross-compile \
         --enable-static \
         --disable-ffplay \
@@ -98,10 +114,11 @@ build () {
         --enable-hwaccel=h264_mediacodec
 
 
+    $NDK/prebuilt/$BUILD_PLATFORM/bin/make clean
+    $NDK/prebuilt/$BUILD_PLATFORM/bin/make -j4
+    $NDK/prebuilt/$BUILD_PLATFORM/bin/make install
 }
 
-build
+#build "x86" "23"
+build "x86_64" "23"
 
-$NDK/prebuilt/$HOST/bin/make clean
-$NDK/prebuilt/$HOST/bin/make -j2
-$NDK/prebuilt/$HOST/bin/make install
